@@ -1,6 +1,8 @@
 # kernelclean
 
-Clean old Ubuntu and Debian kernels easily
+Clean old Ubuntu and Debian kernels easily.
+
+By default purges all old kernels and related cruft, except the running and the two most recent kernels.
 
 # Usage
 
