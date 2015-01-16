@@ -54,7 +54,7 @@ The following packages will be REMOVED:
   linux-image-extra-3.13.0-37-generic* linux-image-extra-3.13.0-39-generic*
   linux-image-extra-3.13.0-40-generic* linux-image-extra-3.13.0-41-generic*
 
-...
+[...]
 ```
 
 # Installation
