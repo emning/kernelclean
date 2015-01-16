@@ -63,4 +63,4 @@ Put the file ```kernelclean``` somewhere (like ```/usr/local/sbin```) and make s
 
 # License
 
-Licensed under the permissive (https://github.com/emning/kernelclean/blob/master/LICENSE)[MIT License]. Feel free!
+Licensed under the permissive [MIT license](https://github.com/emning/kernelclean/blob/master/LICENSE). Feel free!
