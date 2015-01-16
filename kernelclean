@@ -1,0 +1,116 @@
+#!/bin/bash
+#
+# kernelclean v1.0
+#
+# Clean up old kernels and related cruft on Ubuntu and Debian
+#
+# Latest version at:
+# https://github.com/emning/kernelclean
+#
+# Usage:
+#   kernelclean      Interactive mode
+#   kernelclean -y   Automatic mode
+#
+# --Runar Balstad Jensen <runar@emning.no>
+#
+
+set -e
+
+# keep at least this number of kernels
+KEEP=2
+
+YEL=$(echo -e "\e[93m")
+WHT=$(echo -e "\e[97m")
+RST=$(echo -e "\e[0m")
+
+if [[ "$1" = "-y" ]]
+then
+	INTERACTIVE=false
+else
+	INTERACTIVE=true
+fi
+
+if [[ $EUID -ne 0 ]]
+then
+	echo "Sorry, must be root"
+	exit 1
+fi
+
+if ! which apt-get > /dev/null || ! which dpkg > /dev/null
+then
+	echo "Unable to run apt-get and dpkg!"
+	exit 2
+fi
+
+RUNNING_KERNEL=$(uname -r)
+
+highlight_running()
+{
+	if [[ "$1" = "$RUNNING_KERNEL" ]]
+	then
+		echo "$WHT"
+	fi
+}
+
+# sort -Vr == version-aware reverse sort
+INSTALLED_KERNELS=$(dpkg -l | grep 'ii  linux-image-[0-9]' | sort -Vr | cut -c5- | cut -d' ' -f1 | cut -d\- -f3-)
+
+count=0
+ignore=""
+
+for kernel in $INSTALLED_KERNELS
+do
+	count=$((count + 1))
+
+	if [[ $count -le $KEEP || "$kernel" = "$RUNNING_KERNEL" ]]
+	then
+		ignore+="$kernel "
+	fi
+done
+
+filter=""
+
+for i in $ignore
+do
+	version="$(echo $i | sed 's/\(.*\)-\([^0-9]\+\)/\1/')"
+	filter="$filter/$version/d;"
+done
+
+# the tr keeps the ${var%% *} trick working
+remove=$(dpkg -l 'linux-*' | sed '/^[ir][ci]/!d;'$filter's/^[^ ]* [^ ]* \([^ :]*\).*/\1/;/[0-9]/!d' | tr "\n" " ")
+
+echo
+echo "Running kernel:   $(highlight_running $RUNNING_KERNEL) $RUNNING_KERNEL $RST"
+echo
+echo "Keeping kernels:  $(highlight_running ${ignore%% *}) ${ignore%% *} $RST"
+for i in ${ignore#* }
+do
+	echo "                  $(highlight_running $i) $i $RST"
+done
+echo
+
+if [[ -z "$remove" ]]
+then
+	echo "Nothing to clean."
+	echo
+	exit
+fi
+
+echo "Purging packages: $YEL ${remove%% *} $RST"
+for r in ${remove#* }
+do
+	echo "                  $YEL $r $RST"
+done
+echo
+
+if [[ $INTERACTIVE = true ]]
+then
+	echo -n "[Enter] to continue: "
+	read
+	echo
+fi
+
+echo $remove | xargs apt-get -y purge
+
+# sometimes Ubuntu messes up
+update-grub
